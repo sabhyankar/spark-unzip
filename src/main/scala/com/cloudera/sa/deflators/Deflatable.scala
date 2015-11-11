@@ -34,21 +34,21 @@ trait Deflatable extends Serializable {
 
   def deflate[I <: FilterInputStream](fin: I, outputPath: Path) = {
 
-    var fos: FSDataOutputStream = null
+    var fos: Option[FSDataOutputStream] = None
     try {
       val buffer = new Array[Byte](ReadBufferSize)
       deleteIfExists(outputPath)
 
-      fos = fs.create(outputPath)
+      fos = Some(fs.create(outputPath))
       var bytesRead = 0
 
       bytesRead = fin.read(buffer)
       while (bytesRead > 0) {
-        fos.write(buffer,0,bytesRead)
+        fos.get.write(buffer,0,bytesRead)
         bytesRead = fin.read(buffer)
       }
 
-      fos.hflush()
+      fos.get.hflush()
 
     } catch {
       case e: IOException => {
@@ -56,7 +56,7 @@ trait Deflatable extends Serializable {
       }
 
     } finally {
-      IOUtils.closeStream(fos)
+      IOUtils.closeStream(fos.get)
 
     }
   }

@@ -32,22 +32,22 @@ class GzipDeflator(fileSystem: FileSystem) extends Deflatable {
 
   def deflate(inputPath: Path,outputPath: Path) = {
 
-    var gzip: GZIPInputStream= null
-    var fis: FSDataInputStream = null
+    var gzip: Option[GZIPInputStream]= None
+    var fis: Option[FSDataInputStream] = None
 
     try {
 
-      fis = fs.open(inputPath)
-      gzip = new GZIPInputStream(fis)
+      fis = Some(fs.open(inputPath))
+      gzip = Some(new GZIPInputStream(fis.get))
 
       val fileName = FilenameUtils.getBaseName(inputPath.getName)
 
       val finalOutPath = getFullPath(fileName,outputPath.toString)
-      super.deflate(gzip,finalOutPath)
+      super.deflate(gzip.get,finalOutPath)
 
     } finally {
-      IOUtils.closeStream(gzip)
-      IOUtils.closeStream(fis)
+      IOUtils.closeStream(gzip.get)
+      IOUtils.closeStream(fis.get)
 
     }
 

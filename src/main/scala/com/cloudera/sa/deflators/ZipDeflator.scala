@@ -17,7 +17,7 @@
 package com.cloudera.sa.deflators
 
 import java.io.IOException
-import java.util.zip.{ZipException, ZipInputStream}
+import java.util.zip.{ZipEntry, ZipException, ZipInputStream}
 
 import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
 import org.apache.hadoop.io.IOUtils
@@ -33,18 +33,18 @@ class ZipDeflator(fileSystem: FileSystem) extends Deflatable{
 
   def deflate(inputPath: Path,outputPath: Path) = {
 
-    var zip: ZipInputStream = null
-    var fis: FSDataInputStream = null
+    var zip: Option[ZipInputStream] = None
+    var fis: Option[FSDataInputStream] = None
 
     try {
 
-      fis = fs.open(inputPath)
-      zip = new ZipInputStream(fis)
-      var entry = zip.getNextEntry
-      while (entry != null) {
-        val finalOutPath = getFullPath(entry.getName,outputPath.toString)
-        super.deflate(zip,finalOutPath)
-        entry = zip.getNextEntry
+      fis = Some(fs.open(inputPath))
+      zip = Some(new ZipInputStream(fis.get))
+      var entry: Option[ZipEntry] = Option(zip.get.getNextEntry)
+      while (entry.isDefined) {
+        val finalOutPath = getFullPath(entry.get.getName,outputPath.toString)
+        super.deflate(zip.get,finalOutPath)
+        entry = Option(zip.get.getNextEntry)
       }
 
     } catch {
@@ -52,8 +52,8 @@ class ZipDeflator(fileSystem: FileSystem) extends Deflatable{
       case o: IOException => o.printStackTrace()
 
     } finally {
-      IOUtils.closeStream(zip)
-      IOUtils.closeStream(fis)
+      IOUtils.closeStream(zip.get)
+      IOUtils.closeStream(fis.get)
 
     }
 
