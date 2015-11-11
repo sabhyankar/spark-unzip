@@ -16,8 +16,8 @@
 
 package com.cloudera.sa.deflators
 
-import java.io.DataInputStream
-import java.util.zip.ZipInputStream
+import java.io.IOException
+import java.util.zip.{ZipException, ZipInputStream}
 
 import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
 import org.apache.hadoop.io.IOUtils
@@ -35,7 +35,6 @@ class ZipDeflator(fileSystem: FileSystem) extends Deflatable{
 
     var zip: ZipInputStream = null
     var fis: FSDataInputStream = null
-    var din: DataInputStream = null
 
     try {
 
@@ -43,16 +42,18 @@ class ZipDeflator(fileSystem: FileSystem) extends Deflatable{
       zip = new ZipInputStream(fis)
       var entry = zip.getNextEntry
       while (entry != null) {
-        din = new DataInputStream(zip)
         val finalOutPath = getFullPath(entry.getName,outputPath.toString)
-        super.deflate(din,finalOutPath)
+        super.deflate(zip,finalOutPath)
         entry = zip.getNextEntry
       }
+
+    } catch {
+      case e: ZipException => e.printStackTrace()
+      case o: IOException => o.printStackTrace()
 
     } finally {
       IOUtils.closeStream(zip)
       IOUtils.closeStream(fis)
-      IOUtils.closeStream(din)
 
     }
 

@@ -16,7 +16,7 @@
 
 package com.cloudera.sa.deflators
 
-import java.io.{DataInputStream, IOException}
+import java.io.{FilterInputStream, IOException}
 
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import org.apache.hadoop.io.IOUtils
@@ -32,7 +32,7 @@ trait Deflatable extends Serializable {
    * in chunks of ReadBufferSize. This is to allow decompressing large files.
    */
 
-  def deflate(fin: DataInputStream, outputPath: Path) = {
+  def deflate[I <: FilterInputStream](fin: I, outputPath: Path) = {
 
     var fos: FSDataOutputStream = null
     try {
@@ -51,7 +51,9 @@ trait Deflatable extends Serializable {
       fos.hflush()
 
     } catch {
-      case e: IOException => throw new IOException("Error in deflating: " + outputPath.toString)
+      case e: IOException => {
+        new IOException("Error in deflating: " + outputPath.toString + "(" + e.getMessage + ")")
+      }
 
     } finally {
       IOUtils.closeStream(fos)

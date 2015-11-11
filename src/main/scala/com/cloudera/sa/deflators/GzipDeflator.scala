@@ -16,7 +16,6 @@
 
 package com.cloudera.sa.deflators
 
-import java.io.DataInputStream
 import java.util.zip.GZIPInputStream
 
 import org.apache.commons.io.FilenameUtils
@@ -35,23 +34,20 @@ class GzipDeflator(fileSystem: FileSystem) extends Deflatable {
 
     var gzip: GZIPInputStream= null
     var fis: FSDataInputStream = null
-    var din: DataInputStream = null
 
     try {
 
       fis = fs.open(inputPath)
       gzip = new GZIPInputStream(fis)
 
-      din = new DataInputStream(gzip)
       val fileName = FilenameUtils.getBaseName(inputPath.getName)
 
       val finalOutPath = getFullPath(fileName,outputPath.toString)
-      super.deflate(din,finalOutPath)
+      super.deflate(gzip,finalOutPath)
 
     } finally {
       IOUtils.closeStream(gzip)
       IOUtils.closeStream(fis)
-      IOUtils.closeStream(din)
 
     }
 
