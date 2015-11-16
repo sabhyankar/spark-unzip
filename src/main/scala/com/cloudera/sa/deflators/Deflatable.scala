@@ -56,8 +56,10 @@ trait Deflatable extends Serializable {
       }
 
     } finally {
-      IOUtils.closeStream(fos.get)
-
+      fos match {
+        case Some(i) => IOUtils.closeStream(i)
+        case None => {}
+      }
     }
   }
 

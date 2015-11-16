@@ -16,10 +16,11 @@
 
 package com.cloudera.sa
 
-import java.io.IOException
+import java.io.{ByteArrayOutputStream, IOException}
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{Path, FileSystem}
+import org.apache.hadoop.fs.{FSDataInputStream, Path, FileSystem}
+import org.apache.hadoop.io.IOUtils
 
 /**
  * Helper class with utilities to work with HDFS filesystem.
@@ -48,12 +49,17 @@ class HDFSUtilities(conf: Configuration) {
     }
   }
 
-  def getPathList(pathString: String): Seq[String] = {
-    require(isValidPath(pathString))
+  def getPathList(pathString: String, filter: String => Boolean): Seq[String] = {
+    require(pathString != null, "File path cannot be null")
+    require(isValidPath(pathString), "Invalid file path: " + pathString)
 
       val path = getPath(pathString)
       val listStatus = fs.listStatus(path)
-      for (fileStatus <- listStatus; if fileStatus.isFile)
+      for {
+        fileStatus <- listStatus
+        if fileStatus.isFile
+        if filter(fileStatus.getPath.getName)
+      }
         yield fileStatus.getPath.getParent.toString +'/' + fileStatus.getPath.getName
 
     }
@@ -68,7 +74,35 @@ class HDFSUtilities(conf: Configuration) {
   }
 
   def getCompressedPathList(pathString: String): Seq[String] = {
-    getPathList(pathString).filter( f => (f.toLowerCase.endsWith(".zip") || f.toLowerCase.endsWith(".gz")))
+    val compressedFilter = (f: String) => f.toLowerCase().endsWith(".zip") || f.toLowerCase().endsWith(".gz")
+    getPathList(pathString,compressedFilter)
   }
+
+  def getFileContents(pathString: String): Option[String] = {
+    require(pathString != null, "File path cannot be null")
+    require(isValidPath(pathString),"Invalid file path: " + pathString)
+
+    var fis: Option[FSDataInputStream] = None
+    val bos: Option[ByteArrayOutputStream] = None
+    try {
+      val path = getPath(pathString)
+      val status = fs.getFileStatus(path)
+      val len = status.getLen
+      val bytes = new Array[Byte](len.toInt)
+      fis = Some(fs.open(path))
+      IOUtils.readFully(fis.get,bytes,0,len.toInt)
+      Some(new String(bytes))
+
+    } catch {
+      case e: Exception => throw new Exception("Exception occurred in getFileContents: " + pathString)
+
+    } finally {
+      fis match {
+        case Some(i) => IOUtils.closeStream(i)
+        case None => {}
+      }
+    }
+  }
+
 
 }

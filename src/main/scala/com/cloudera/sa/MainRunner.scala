@@ -26,7 +26,6 @@ object MainRunner {
 
     val conf = new Configuration with Serializable
     val sparkConf = new SparkConf
-    sparkConf.set("spark.serializer","org.apache.spark.serializer.KryoSerializer")
     sparkConf.registerKryoClasses(Array(classOf[Deflator]))
     val sc = new SparkContext(sparkConf)
 
@@ -34,10 +33,11 @@ object MainRunner {
     val some = hdfsUtilities.getCompressedPathList(args(0))
 
     val files = sc.parallelize(some,some.length)
-    files.foreach( fname => {
-      val zu = new Deflator(conf)
-      zu.deflate(fname,args(1))
-    })
-
+    files.foreach { fname =>
+      {
+        val zu = new Deflator(conf)
+        zu.deflate(fname, args(1))
+      }
+    }
   }
 }

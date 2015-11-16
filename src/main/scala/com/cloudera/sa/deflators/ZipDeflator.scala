@@ -52,9 +52,14 @@ class ZipDeflator(fileSystem: FileSystem) extends Deflatable{
       case o: IOException => o.printStackTrace()
 
     } finally {
-      IOUtils.closeStream(zip.get)
-      IOUtils.closeStream(fis.get)
-
+      zip match {
+        case Some(i) => IOUtils.closeStream(i)
+        case None => {}
+      }
+      fis match {
+        case Some(i) => IOUtils.closeStream(i)
+        case None => {}
+      }
     }
 
   }

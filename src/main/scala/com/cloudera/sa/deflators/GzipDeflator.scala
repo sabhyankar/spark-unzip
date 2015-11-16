@@ -46,9 +46,14 @@ class GzipDeflator(fileSystem: FileSystem) extends Deflatable {
       super.deflate(gzip.get,finalOutPath)
 
     } finally {
-      IOUtils.closeStream(gzip.get)
-      IOUtils.closeStream(fis.get)
-
+      gzip match {
+        case Some(i) => IOUtils.closeStream(i)
+        case None => {}
+      }
+      fis match {
+        case Some(i) => IOUtils.closeStream(i)
+        case None => {}
+      }
     }
 
   }
